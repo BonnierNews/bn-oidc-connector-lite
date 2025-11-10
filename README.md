@@ -1,267 +1,420 @@
-# Node Starter App for TypeScript
+# Bonnier News OIDC Connector Lite
 
-## Description
+Express middleware for connecting to the Bonnier News OpenID Connect Provider, providing authentication and authorization functionality for Node.js applications.
 
-Fork this project when creating new Typescript Node.js backend projects. The goal of the project structure is:
+## Table of Contents
 
-- Any developer should be able to quickly understand the project, develop it and deploy it
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Middleware](#middleware)
+- [Request Context](#request-context)
+- [Response Context](#response-context)
+- [API Reference](#api-reference)
+- [Error Handling](#error-handling)
 
-Checking out the code and running `npm install && npm test` should take you most of the way.
-
-## The correct way to start a new repo
-
-Create a repo on github (or ask someone with permissions to create it for you)
-
-
-```bash
-git clone git@github.com:BonnierNews/<your-new-repo>.git
-cd <your-new-repo>
-
-git remote add starterapp git@github.com:BonnierNews/node-starterapp-ts.git
-git fetch starterapp
-git merge --allow-unrelated-histories starterapp/main
-```
-
-Now you have a project to start developing in!
-
-## To get changes/files
-
-To get changes or files from this repo do
+## Installation
 
 ```bash
-git remote add starterapp git@github.com:BonnierNews/node-starterapp-ts.git
-git fetch starterapp
-
-# apply a commit
-git cherry-pick <some-commit>
-
-# get a file from the starterapp
-git checkout starterapp -- <path-to-file>
+npm install @bonniernews/bn-oidc-connector-lite
 ```
 
-## Docker setup
+## Quick Start
 
-At some point after starting the repo, but before it is built, the repo should
-be setup to use docker.
+```typescript
+import { auth, isAuthenticated, isEntitled } from "@bonniernews/bn-oidc-connector-lite";
+import express from "express";
 
-```bash
-# Commit the generated files: docker-compose.yml, Dockerfile, .dockerignore
-git add docker-compose.yml Dockerfile .dockerignore
-git commit
+const app = express();
+
+// Initialize OIDC middleware
+app.use(auth({
+  clientId: "your-client-id",
+  issuerBaseURL: new URL("https://bn-login-id-service-lab.bnu.bn.nr"),
+  baseURL: new URL("https://your-app-domain.com"),
+  scopes: [ "profile", "email", "entitlements", "offline_access" ]
+}));
+
+// Protected route requiring authentication
+app.get("/profile", isAuthenticated, (req, res) => {
+  res.json({ user: req.oidc.user });
+});
+
+// Protected route requiring specific entitlements
+app.get("/admin", isEntitled([ "admin" ]), (req, res) => {
+  res.json({ message: "Admin area" });
+});
+
+app.listen(3000);
 ```
-
-## Local setup
-
-```bash
-npm install # install dependencies
-npm test # run tests
-npm run dev # start dev server
-```
-
-## Utilities
-
-Other Bonnier News projects that you are advised to use:
-
-* https://www.npmjs.com/package/exp-amqp-connection - for working with rabbitmq
-* https://www.npmjs.com/package/exp-fetch - for caching requests to external resources.
-* https://www.npmjs.com/package/exp-cachebuster - cache busting.
-
-## Branch strategy
-
-Prefer development straight on the main branch. Make small isolated commits.
-Never commit anything that breaks tests, they should work every commit so that
-`git bisect` can be used if necessary.
-
-For larger changes, or when you want feedback before committing to main, use
-feature branches with [git flow][11]
-inspired names such as `feature/add-cachebuster` or `spike/switch-to-iojs` and
-make a pull request from [github][12].
-
-## Testing strategy
-
-Tests go in the `test` directory. All tests must be deterministic and fast.
-Use [mocha][1] for unit style tests and follow the
-naming/structure from the project. Unit tests for module `lib/foo.js` go in
-`test/lib/foo-test.js`. Use [mocha-cakes-2][2]
-for end to end tests and put them in `test/features`. Use [nock][5]
-and [supertest][6] in the feature tests.
-
-## Deploy
-
-To be written.
-
-## Common project structure
-
-```bash
-## Directories
-lib/ - this is where the code is
-config/ - configuration
-docs/ - documentation in .md files
-logs/ - logs for tests
-node_modules/ - dependencies
-public/ - client side resources
-scripts/ - various executable bash/js-scripts for deploying, manual testing etc.
-test/ - test code
-tmp/ - everything in here is ignored, put your own one off experiments here
-
-## Files
-README.md - see below
-package.json - define dependencies etc.
-app.js - start the service in a single process
-```
-
-### Readme
-
-A `README.md` must be included and include:
-
-- _Description_: Describe the service, what does it do?
-- _Local setup_: How to get the application up and running locally (software to install, hosts-file/`$PATH` changes etc) and possibly information on how to develop/debug the application effectively
-- _Branch strategy_: How to work with branches, pull requests, code review etc. in this project
-- _Testing strategy_: What is tested and how? What kinds of tests exists. When introducing new functionality what new tests should be written?
-- _Deploy_: How to deploy the application in the environments where it runs
-
-## npm and package.json
-
-npm is used as the task runner of choice for basic tasks. These are the standard tasks that all projects should have:
-
-```bash
-npm install # Installs dependencies and builds minified CSS/JS, etc.
-npm test # Runs all tests
-npm start # Runs the service locally
-```
-
-Minimize the need to run commands manually by bundling them in the scripts section of package.json:
-
-Notes:
-
-- prepublish runs on `npm install` and must return successful exit code even when only production dependencies are installed.
-
-- The project's main file should be set in package.json's field "main". This will make the application easy to start with `npm run build && node .`.
-
-- [eslint][3] should be used to verify that the code is well structured and looks nice. To make sure the code stays nice these tools are run on `npm test` (see scripts above).
-
-- All tools used (above: [mocha][1], [eslint][3]) should be configured in such a way that they can be run manually when needed. Prefer checked in configuration files (for example `mocha.opts`) over specifying many command line arguments. When debugging a specific test case you should be able to run just [mocha][1] without any special arguments.
-
-Avoid:
-
-- relying on globally installed `npm` modules ([mocha][1], [eslint][3] etc.), include them in `package.json` as dependencies or dev dependencies instead. Put `node_modules/.bin` in your `PATH` to run the binaries manually or use [npx](https://www.npmjs.com/package/npx)!
 
 ## Configuration
 
-Configuration is handled with [exp-config][8] via a mix of configuration files and environment variables. It reads configuration for the correct environment (controlled by the `NODE_ENV` environment variable).
+### AuthOptions
 
-Apart from reading the correct json file it will also read, if available, a file called `.env` in the project's root directory. In this file you can override entries in the config files. Here is an example .env file:
+| Property | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
+| `clientId` | `string` | ✅ | - | Your OIDC client ID |
+| `clientSecret` | `string` | ❌ | - | Your OIDC client secret (for confidential clients) |
+| `issuerBaseURL` | `URL` | ✅ | - | Base URL of the OIDC provider |
+| `baseURL` | `URL` | ✅ | - | Base URL of your application |
+| `loginPath` | `string` | ❌ | `"/id/login"` | Path for login endpoint |
+| `logoutPath` | `string` | ❌ | `"/id/logout"` | Path for logout endpoint |
+| `loginCallbackPath` | `string` | ❌ | `"/id/login/callback"` | Path for login callback endpoint |
+| `logoutCallbackPath` | `string` | ❌ | `"/id/logout/callback"` | Path for logout callback endpoint |
+| `scopes` | `string[]` | ❌ | `["openid", "entitlements", "offline_access"]` | OAuth scopes to request |
+| `prompts` | `string[]` | ❌ | `[]` | Custom prompts for the authorization request |
+| `afterLoginCallback` | `function` | ❌ | - | Custom handler after successful login |
+| `afterLogoutCallback` | `function` | ❌ | - | Custom handler after successful logout |
+| `cookies` | `object` | ❌ | See below | Cookie configuration |
 
-```shell
-# Prod
-apiUrl=http://ursula1.expressen.se
-pufferBaseUrl=http://z.cdn-expressen.se/images
+### Cookie Configuration
 
-# Stage
-#apiUrl=http://ursula.api.expressen.se
-#pufferBaseUrl=http://exp-www-test7.bonnierdigitalservices.se/images
+The connector uses several cookies to manage authentication state and tokens. The default cookie names are:
 
-requestLogging=false
-toggle.ads=false
-```
-
-As you can see this file looks like a shell file setting environment variables. It can contain comments.
-
-Environment variables have the highest priority: `requestLogging=true node .`
-
-This setup makes it easy to run a service locally using production config and just override a selected few properties. This is very useful when doing performance testing etc. It keeps the need to introduce more and more environments in check.
-
-## Shared code
-
-If you have a piece of code that you feel would be useful to other teams, release it as a public npm module. Most of our common code is fairly generic (logging, configuration, cacheBusting) and can be turned into real open source modules.
-
-## Testing
-
-Tests are run using `npm test` which in turn runs tools that test the code and verify that it follows certain code conventions.
-
-Test tools that we use:
-
-- [mocha][1] - for running tests and formatting results
-- [mocha-cakes-2][2] - BDD-plugin for mocha, use for full stack tests
-- [eslint][3] - javascript static code & style analysis
-- [nock][5] - http mocking
-- [supertest][6] - http test framework
-- [chai][7] - assertion library
-
-Tests should be deterministic, fast and full stack. Static code analysis and code style is part of the tests.
-
-To make the application possible to test with [supertest][6] you need to export the application from the main file:
-
-```javascript
-// In app.js
-var express = require("express");
-var app = express();
-
-app.get(...) // Setup routes
-
-modules.exports = app; // Expose app to tests
-
-// Only listen if started, not if included
-if (require.main === module) {
-  app.listen(...)
+```typescript
+cookies: {
+  authParams: "bnoidcap",   // Cookie name for auth parameters
+  tokens: {
+    access: "bnoidcat",     // Cookie name for access token
+    refresh: "bnoidcrt",    // Cookie name for refresh token
+    id: "bnoidcit",         // Cookie name for ID token
+    expiresIn: "bnoidcei"   // Cookie name for token expiry
+  },
+  logout: "bnoidclo"        // Cookie name for logout state
 }
 ```
 
-Now the tests can include [supertest][6] to make requests to the application on a random port which avoids a port conflict if the application is already running:
+### Scopes Configuration
 
-```javascript
-var request = require("supertest");
-var app = require("../");
+The `scopes` option determines what information and permissions your application requests from the OIDC provider. Scopes control access to user data and functionality.
 
-describe("/", function () {
-  it("gives 200 OK", function (done) {
-    request(app).get("/").expect(200, done);
+```typescript
+scopes: [ "openid", "profile", "email", "entitlements", "offline_access" ]
+```
+
+**Available Scopes:**
+
+| Scope | Description | Data Included |
+|-------|-------------|---------------|
+| `"openid"` | Basic OpenID Connect authentication | User ID (`sub` claim) |
+| `"profile"` | Access to user's profile information | Name (`given_name` and `family_name` claims) |
+| `"email"` | Access to user's email address | Email address and verification status (`email` and `email_verified` claims) |
+| `"entitlements"` | Access to user's entitlements | User entitlements (`ent` claim) |
+| `"external_ids"` | Access to user's external IDs | External IDs for Didomi and Google Ads (`external_ids` claim) |
+| `"offline_access"` | Request refresh token for long-term access | Enables token refresh without re-authentication |
+
+**Important Notes:**
+
+- You do not need to specify `"openid"` in your configuration; it will be included automatically
+- `"entitlements"` is needed if you plan to use `isEntitled()` middleware
+- `"offline_access"` is highly recommended for applications to enable automatic token refresh
+
+### Prompts Configuration
+
+The `prompts` option allows you to customize the authentication behavior by specifying OpenID Connect prompt parameters that control how the authorization server interacts with the user.
+
+```typescript
+prompts: [ "login", "consent" ]  // Forces user to re-authenticate and consent
+```
+
+**Available Prompts:**
+
+| Prompt | Description |
+|--------|-------------|
+| `"none"` | No user interaction. If authentication/consent is required, returns an error instead of prompting the user |
+| `"login"` | Forces the user to re-authenticate, even if they have an active session |
+| `"consent"` | Prompts the user to provide consent for the application's requested scopes again (note: this is currently not in use) |
+| `"select_account"` | Forces the user to confirm or switch accounts if already signed in.<br>**Note:** This is currently the only way to log in as a different user if you are already authenticated without requiring a full logout from the provider. |
+
+**Dynamic Prompts:**
+
+You can also specify prompts dynamically during login:
+
+```typescript
+app.get("/secure-login", (req, res) => {
+  res.oidc.login(req, res, {
+    prompts: [ "login" ],  // Override default prompts for this login
+    returnTo: "/sensitive-area"
   });
 });
 ```
 
+## Middleware
 
-## Code style
+The library provides several middleware functions for different authentication and authorization scenarios.
 
-When writing node code you don't need to work around browser quirks and you can use modern JavaScript features such as array.map, array.forEach etc.
+### Core Middleware
 
-We rely on [eslint][3] to detect certain errors such as unused variables, duplicate declarations etc. This means that you should not adapt your coding style because of hoisting. Declare variables when they are needed, not at the top of the scope. 
+#### `auth(options: AuthOptions)`
 
-Eslint will also prevent you from using the following Typescript features:
-- Namespaces
-- Abstract classes
-- Class inheritance
-- Enums
-- Decorators
-- Private property
+The main middleware that initializes the OIDC connector and sets up authentication routes. It should be registered as early as possible in your Express app.
 
-To avoid calling a callback twice, always return the result of the callback. Since calling the callback with an error is done so much this should be done as a one-liner:
+```typescript
+import { auth } from "@bonniernews/bn-oidc-connector-lite";
 
-```javascript
-function doStuff(id, callback) {
-  database.find(id, function (err, data) {
-    if (err) return callback(err);
+app.use(auth({
+  clientId: "your-client-id",
+  issuerBaseURL: new URL("https://bn-login-id-service-lab.bnu.bn.nr"),
+  baseURL: new URL("https://your-app.com")
+}));
+```
 
-    // do your thing...
+**Features:**
+- Initializes OIDC configuration and JWKS
+- Sets up authentication routes
+- Adds OIDC context to request/response objects
+- Handles automatic token refresh
+- Processes query parameters for authentication flows
 
-    return callback(null, data);
-  });
+**Routes Created:**
+- `GET /id/login` - Initiates login flow
+- `GET /id/logout` - Initiates logout flow
+- `GET /id/login/callback` - Handles login callback
+- `GET /id/logout/callback` - Handles logout callback
+
+### Guard Middleware
+
+The library provides two guard middleware functions for protecting routes:
+
+#### `isAuthenticated`
+
+Ensures the user is authenticated before accessing a route.
+
+```typescript
+import { isAuthenticated } from "@bonniernews/bn-oidc-connector-lite";
+
+app.get("/protected", isAuthenticated, (req, res) => {
+  // User is guaranteed to be authenticated
+  res.json({ message: "Hello authenticated user!" });
+});
+```
+
+**Behavior:**
+- Checks `req.oidc.isAuthenticated`
+- Throws `UnauthenticatedError` if user is not authenticated
+- Allows request to continue if user is authenticated
+
+**Use when:** You only need to verify that the user is logged in, without checking specific permissions.
+
+#### `isEntitled(validEntitlements: string[])`
+
+Checks if the authenticated user has specific entitlements. **Note: This middleware automatically checks for authentication first, so `isAuthenticated` is not needed when using `isEntitled`.**
+
+```typescript
+import { isEntitled } from "@bonniernews/bn-oidc-connector-lite";
+
+app.get("/admin", isEntitled([ "admin", "super-user" ]), (req, res) => {
+  // User is guaranteed to be authenticated AND have at least one of the specified entitlements
+  res.json({ message: "Admin access granted" });
+});
+```
+
+**Parameters:**
+- `validEntitlements`: Array of entitlement strings. User needs at least one.
+
+**Behavior:**
+- First checks if user is authenticated (throws `UnauthenticatedError` if not)
+- Returns `true` if `validEntitlements` is empty
+- Checks user's entitlements from ID token claims (`ent` field)
+- Throws `UnauthorizedError` if user lacks required entitlements
+
+**Use when:** You need to verify both authentication and specific permissions/roles.
+
+#### When to Use Which Middleware
+
+```typescript
+// ✅ Use isAuthenticated for routes that only require login
+app.get("/profile", isAuthenticated, (req, res) => { ... });
+
+// ✅ Use isEntitled for routes that require specific permissions
+app.get("/admin", isEntitled([ "admin" ]), (req, res) => { ... });
+
+// ❌ Don't combine them - isEntitled already checks authentication
+app.get("/admin", isAuthenticated, isEntitled([ "admin" ]), (req, res) => { ... });
+
+// ✅ Use isAuthenticated when doing manual entitlement checks
+app.get("/dynamic", isAuthenticated, (req, res) => {
+  const hasAccess = req.oidc.isEntitled([ "premium" ]);
+  // ... conditional logic
+});
+```
+
+## Request Context
+
+The middleware adds an `oidc` property to the Express `Request` object with the following structure:
+
+### `req.oidc: OidcRequestContext`
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `config` | `OidcConfig` | Complete OIDC configuration including client config, well-known config, and signing keys |
+| `accessToken` | `string \| undefined` | Current access token |
+| `refreshToken` | `string \| undefined` | Current refresh token |
+| `idToken` | `string \| undefined` | Current ID token (JWT) |
+| `expiresIn` | `number \| undefined` | Token expiration time in seconds |
+| `idTokenClaims` | `Record<string, any> \| undefined` | Decoded ID token claims |
+| `isAuthenticated` | `boolean` | Whether the user is currently authenticated |
+| `user` | `object \| undefined` | User information extracted from ID token |
+| `isEntitled` | `function` | Function to check user entitlements |
+
+### User Object
+
+```typescript
+req.oidc.user: {
+  id: string;        // User ID (from 'sub' claim)
+  email?: string;    // User email (if available in token)
 }
 ```
 
-We use [eslint](https://eslint.org/) configured using [eslint-config-exp](https://www.npmjs.com/package/eslint-config-exp) as code formatter. Ensure that your editor runs eslint --fix on save.
+### isEntitled Function
 
-## Operations
+```typescript
+req.oidc.isEntitled(validEntitlements: string[]): boolean
+```
 
-To be written.
+Check if the current user has any of the specified entitlements.
 
-[1]: http://visionmedia.github.io/mocha/
-[2]: https://github.com/iensu/mocha-cakes-2
-[3]: http://eslint.org/
-[5]: https://github.com/pgte/nock
-[6]: http://visionmedia.github.io/superagent/
-[7]: http://chaijs.com/
-[8]: https://github.com/BonnierNews/exp-config
-[10]: https://github.com/BonnierNews/exp-asynccache
-[11]: http://jeffkreeftmeijer.com/2010/why-arent-you-using-git-flow/
-[12]: https://github.com/
+**Example:**
+```typescript
+app.get("/content", isAuthenticated, (req, res) => {
+  if (req.oidc.isEntitled([ "premium", "subscriber" ])) {
+    res.json({ content: "Premium content" });
+  } else {
+    res.json({ content: "Free content" });
+  }
+});
+```
+
+## Response Context
+
+The middleware adds an `oidc` property to the Express `Response` object with authentication flow methods:
+
+### `res.oidc: OidcResponseContext`
+
+| Method | Signature | Description |
+|--------|-----------|-------------|
+| `login` | `(req, res, options?) => void` | Initiates login flow |
+| `loginCallback` | `(req, res) => void` | Handles login callback |
+| `logout` | `(req, res, options?) => void` | Initiates logout flow |
+| `logoutCallback` | `(req, res) => void` | Handles logout callback |
+| `refresh` | `(req, res) => Promise<void>` | Refreshes tokens |
+
+### Login Options
+
+```typescript
+type LoginOptions = {
+  returnTo?: string;     // URL to redirect after login
+  scopes?: string[];     // Additional scopes to request
+  prompts?: string[];    // OIDC prompts (e.g., "none", "login", "consent")
+  locale?: string;       // UI locale for the login page
+}
+```
+
+### Logout Options
+
+```typescript
+type LogoutOptions = {
+  returnTo?: string;     // URL to redirect after logout
+}
+```
+
+### Manual Authentication Flow
+
+```typescript
+app.get("/custom-login", (req, res) => {
+  res.oidc.login(req, res, {
+    returnTo: "/dashboard",
+    scopes: [ "profile", "email" ],
+    locale: "sv-SE"
+  });
+});
+
+app.get("/custom-logout", (req, res) => {
+  res.oidc.logout(req, res, {
+    returnTo: "/goodbye"
+  });
+});
+```
+
+## API Reference
+
+### Query Parameters
+
+The middleware automatically handles special query parameters:
+
+#### `idlogin`
+
+Triggers automatic login flow:
+
+```
+GET /some-page?idlogin=true
+GET /some-page?idlogin=silent  // Uses prompt=none for silent authentication
+```
+
+#### `idrefresh`
+
+Triggers token refresh:
+
+```
+GET /some-page?idrefresh=true
+```
+
+This is useful in scenarios where claims or entitlements may have changed during the user's session—such as after a purchase, subscription upgrade, or profile update—allowing the application to refresh tokens and retrieve updated user information without requiring the user to log in again.
+
+### Authentication Flow
+
+1. **Login**: User visits `/id/login` or a page with `?idlogin=true`
+2. **Authorization**: User is redirected to OIDC provider
+3. **Callback**: Provider redirects to `/id/login/callback` with authorization code
+4. **Token Exchange**: Authorization code is exchanged for tokens
+5. **Session**: Tokens are stored in secure cookies
+6. **Access**: User can access protected resources
+
+### Token Management
+
+- **Access tokens** are used for API authentication
+- **Refresh tokens** are used to obtain new access tokens
+- **ID tokens** contain user identity information
+- Tokens are automatically refreshed when they expire
+- Failed refresh attempts trigger re-authentication
+
+## Error Handling
+
+The library defines several error types for different failure scenarios:
+
+### Error Types
+
+| Error | Description |
+|-------|-------------|
+| `UnauthenticatedError` | User is not logged in |
+| `UnauthorizedError` | User lacks required permissions |
+| `InvalidStateError` | OAuth state parameter mismatch |
+| `InvalidIdTokenError` | ID token validation failed |
+| `RefreshRequestError` | Token refresh failed |
+| `TokenRequestError` | Token exchange failed |
+| `InitOidcError` | OIDC initialization failed |
+| `DiscoveryFailedError` | OIDC discovery endpoint failed |
+
+### Error Handling Example
+
+```typescript
+import { UnauthenticatedError, UnauthorizedError } from "@bonniernews/bn-oidc-connector-lite";
+
+app.use((err, req, res, next) => {
+  if (err instanceof UnauthenticatedError) {
+    return res.status(401).json({ error: "Please log in" });
+  }
+
+  if (err instanceof UnauthorizedError) {
+    return res.status(403).json({ error: "Access denied" });
+  }
+
+  // Handle other errors
+  next(err);
+});
+```
+
+---
+
+For more information and updates, visit the [GitHub repository](https://github.com/BonnierNews/bn-oidc-connector-lite).
