@@ -1,5 +1,5 @@
 {
-  "name": "@bonniernews/bn-oidc-connector-lite",
+  "name": "@bonniernews/bn-oidc-connector-express",
   "version": "0.0.14",
   "description": " Express middleware for Fastly Compute OIDC",
   "type": "module",
@@ -19,13 +19,13 @@
       "require": "./dist/index.cjs"
     }
   },
-  "homepage": "https://github.com/BonnierNews/bn-oidc-connector-lite#readme",
+  "homepage": "https://github.com/BonnierNews/bn-oidc-connector-express#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/BonnierNews/bn-oidc-connector-lite.git"
+    "url": "git+https://github.com/BonnierNews/bn-oidc-connector-express.git"
   },
   "bugs": {
-    "url": "https://github.com/BonnierNews/bn-oidc-connector-lite/issues"
+    "url": "https://github.com/BonnierNews/bn-oidc-connector-express/issues"
   },
   "scripts": {
     "build": "tsup",

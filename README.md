@@ -1,4 +1,4 @@
-# Bonnier News OIDC Connector Lite
+# Bonnier News OIDC Connector Express
 
 Express middleware for connecting to the Bonnier News OpenID Connect Provider, providing authentication and authorization functionality for Node.js applications.
 
@@ -16,13 +16,13 @@ Express middleware for connecting to the Bonnier News OpenID Connect Provider, p
 ## Installation
 
 ```bash
-npm install @bonniernews/bn-oidc-connector-lite
+npm install @bonniernews/bn-oidc-connector-express
 ```
 
 ## Quick Start
 
 ```typescript
-import { auth, isAuthenticated, isEntitled } from "@bonniernews/bn-oidc-connector-lite";
+import { auth, isAuthenticated, isEntitled } from "@bonniernews/bn-oidc-connector-express";
 import express from "express";
 
 const app = express();
@@ -151,7 +151,7 @@ The library provides several middleware functions for different authentication a
 The main middleware that initializes the OIDC connector and sets up authentication routes. It should be registered as early as possible in your Express app.
 
 ```typescript
-import { auth } from "@bonniernews/bn-oidc-connector-lite";
+import { auth } from "@bonniernews/bn-oidc-connector-express";
 
 app.use(auth({
   clientId: "your-client-id",
@@ -182,7 +182,7 @@ The library provides two guard middleware functions for protecting routes:
 Ensures the user is authenticated before accessing a route.
 
 ```typescript
-import { isAuthenticated } from "@bonniernews/bn-oidc-connector-lite";
+import { isAuthenticated } from "@bonniernews/bn-oidc-connector-express";
 
 app.get("/protected", isAuthenticated, (req, res) => {
   // User is guaranteed to be authenticated
@@ -202,7 +202,7 @@ app.get("/protected", isAuthenticated, (req, res) => {
 Checks if the authenticated user has specific entitlements. **Note: This middleware automatically checks for authentication first, so `isAuthenticated` is not needed when using `isEntitled`.**
 
 ```typescript
-import { isEntitled } from "@bonniernews/bn-oidc-connector-lite";
+import { isEntitled } from "@bonniernews/bn-oidc-connector-express";
 
 app.get("/admin", isEntitled([ "admin", "super-user" ]), (req, res) => {
   // User is guaranteed to be authenticated AND have at least one of the specified entitlements
@@ -399,7 +399,7 @@ The library defines several error types for different failure scenarios:
 ### Error Handling Example
 
 ```typescript
-import { UnauthenticatedError, UnauthorizedError } from "@bonniernews/bn-oidc-connector-lite";
+import { UnauthenticatedError, UnauthorizedError } from "@bonniernews/bn-oidc-connector-express";
 
 app.use((err, req, res, next) => {
   if (err instanceof UnauthenticatedError) {
@@ -417,4 +417,4 @@ app.use((err, req, res, next) => {
 
 ---
 
-For more information and updates, visit the [GitHub repository](https://github.com/BonnierNews/bn-oidc-connector-lite).
+For more information and updates, visit the [GitHub repository](https://github.com/BonnierNews/bn-oidc-connector-express).

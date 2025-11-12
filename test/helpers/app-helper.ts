@@ -1,6 +1,6 @@
 import express from "express";
 
-import { auth, type AuthOptions } from "../../index";
+import { auth } from "../../index";
 
 const createApp = () => {
   const app = express();
@@ -8,9 +8,9 @@ const createApp = () => {
   return app;
 };
 
-const createAppWithMiddleware = (clientConfig: AuthOptions) => {
+const createAppWithMiddleware = () => {
   const app = createApp();
-  app.use(auth(clientConfig));
+  app.use(auth());
   return app;
 };
 

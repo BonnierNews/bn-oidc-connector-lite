@@ -3,7 +3,7 @@ import bnConfig from "@bonniernews/eslint-config";
 export default [
   ...bnConfig,
   {
-    name: "bn-oidc-connector-lite/ignores",
+    name: "bn-oidc-connector-express/ignores",
     ignores: [
       "tmp /",
       "public /",
